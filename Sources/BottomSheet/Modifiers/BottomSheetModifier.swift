@@ -10,6 +10,7 @@ import SwiftUI
 @available(iOS 15, *)
 struct BottomSheet<T: Any, ContentView: View>: ViewModifier {
     @Binding private var isPresented: Bool
+    @Binding private var currentDetent: UISheetPresentationController.Detent.Identifier?
     
     private let detents: [UISheetPresentationController.Detent]
     private let largestUndimmedDetentIdentifier: UISheetPresentationController.Detent.Identifier?
@@ -25,6 +26,7 @@ struct BottomSheet<T: Any, ContentView: View>: ViewModifier {
 
     init(
         isPresented: Binding<Bool>,
+        currentDetent: Binding<UISheetPresentationController.Detent.Identifier?> = .constant(nil),
         detents: [UISheetPresentationController.Detent] = [.medium(), .large()],
         largestUndimmedDetentIdentifier: UISheetPresentationController.Detent.Identifier? = nil,
         prefersGrabberVisible: Bool = false,
@@ -36,6 +38,7 @@ struct BottomSheet<T: Any, ContentView: View>: ViewModifier {
         @ViewBuilder contentView: () -> ContentView
     ) {
         _isPresented = isPresented
+        _currentDetent = currentDetent
         self.detents = detents
         self.largestUndimmedDetentIdentifier = largestUndimmedDetentIdentifier
         self.prefersGrabberVisible = prefersGrabberVisible
@@ -49,6 +52,7 @@ struct BottomSheet<T: Any, ContentView: View>: ViewModifier {
     
     init(
         item: Binding<T?>,
+        currentDetent: Binding<UISheetPresentationController.Detent.Identifier?> = .constant(nil),
         detents: [UISheetPresentationController.Detent] = [.medium(), .large()],
         largestUndimmedDetentIdentifier: UISheetPresentationController.Detent.Identifier? = nil,
         prefersGrabberVisible: Bool = false,
@@ -64,6 +68,7 @@ struct BottomSheet<T: Any, ContentView: View>: ViewModifier {
         }, set: { newValue in
             item.wrappedValue = nil
         })
+         self._currentDetent = currentDetent
         self.detents = detents
         self.largestUndimmedDetentIdentifier = largestUndimmedDetentIdentifier
         self.prefersGrabberVisible = prefersGrabberVisible
@@ -77,6 +82,7 @@ struct BottomSheet<T: Any, ContentView: View>: ViewModifier {
     func body(content: Content) -> some View {
         content
             .onChange(of: isPresented, perform: updatePresentation)
+            .onChange(of: currentDetent, perform: updateCurrentDetent)
     }
 
     private func updatePresentation(_ isPresented: Bool) {
@@ -94,6 +100,7 @@ struct BottomSheet<T: Any, ContentView: View>: ViewModifier {
         if isPresented {
             bottomSheetViewController = BottomSheetViewController(
                 isPresented: $isPresented,
+                currentDetent: $currentDetent,
                 detents: detents,
                 largestUndimmedDetentIdentifier: largestUndimmedDetentIdentifier,
                 prefersGrabberVisible: prefersGrabberVisible,
@@ -111,6 +118,11 @@ struct BottomSheet<T: Any, ContentView: View>: ViewModifier {
             bottomSheetViewController?.dismiss(animated: true)
         }
     }
+    
+    private func updateCurrentDetent(_ detent: UISheetPresentationController.Detent.Identifier?) {
+        self.bottomSheetViewController?.updateCurrentDetent(to: detent)
+    }
+    
 }
 
 @available(iOS 15, *)
@@ -131,6 +143,7 @@ extension View {
     ///   - contentView: A closure that returns the content of the sheet.
     public func bottomSheet<ContentView: View>(
         isPresented: Binding<Bool>,
+        currentDetent: Binding<UISheetPresentationController.Detent.Identifier?> = .constant(nil),
         detents: [UISheetPresentationController.Detent] = [.medium(), .large()],
         largestUndimmedDetentIdentifier: UISheetPresentationController.Detent.Identifier? = nil,
         prefersGrabberVisible: Bool = false,
@@ -144,6 +157,7 @@ extension View {
         self.modifier(
             BottomSheet<Any, ContentView>(
                 isPresented: isPresented,
+                currentDetent: currentDetent,
                 detents: detents,
                 largestUndimmedDetentIdentifier:  largestUndimmedDetentIdentifier, prefersGrabberVisible: prefersGrabberVisible,
                 prefersScrollingExpandsWhenScrolledToEdge: prefersScrollingExpandsWhenScrolledToEdge,
@@ -171,6 +185,7 @@ extension View {
     ///   - contentView: A closure that returns the content of the sheet.
     public func bottomSheet<T: Any, ContentView: View>(
         item: Binding<T?>,
+        currentDetent: Binding<UISheetPresentationController.Detent.Identifier?> = .constant(nil),
         detents: [UISheetPresentationController.Detent] = [.medium(), .large()],
         largestUndimmedDetentIdentifier: UISheetPresentationController.Detent.Identifier? = nil,
         prefersGrabberVisible: Bool = false,
@@ -184,6 +199,7 @@ extension View {
         self.modifier(
             BottomSheet(
                 item: item,
+                currentDetent: currentDetent,
                 detents: detents,
                 largestUndimmedDetentIdentifier:  largestUndimmedDetentIdentifier, prefersGrabberVisible: prefersGrabberVisible,
                 prefersScrollingExpandsWhenScrolledToEdge: prefersScrollingExpandsWhenScrolledToEdge,
